@@ -35,10 +35,38 @@ alter table habits add column if not exists category text default 'general';
 alter table habits add column if not exists sort_order integer default 0;
 alter table habits add column if not exists freeze_count integer default 3;
 
+-- Нові колонки v2
+alter table habits add column if not exists motivation text;
+alter table habits add column if not exists stakes_xp integer default 0;
+alter table habits add column if not exists frequency text default 'daily'; -- 'daily' | 'weekly'
+alter table habits add column if not exists frequency_days integer[] default '{0,1,2,3,4,5,6}'; -- дні тижня 0=нд..6=сб
+
+-- Настрій після виконання
+alter table habit_logs add column if not exists mood integer; -- 1-5
+
+-- Таблиця поганих днів
+create table if not exists bad_days (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  date date not null,
+  created_at timestamptz not null default now(),
+  unique(user_id, date)
+);
+
+alter table bad_days enable row level security;
+
+create policy "Users can view own bad days"
+  on bad_days for select using (auth.uid() = user_id);
+create policy "Users can insert own bad days"
+  on bad_days for insert with check (auth.uid() = user_id);
+create policy "Users can delete own bad days"
+  on bad_days for delete using (auth.uid() = user_id);
+
 -- Індекси для швидкого пошуку
 create index if not exists habits_user_id_idx on habits(user_id);
 create index if not exists habit_logs_habit_id_idx on habit_logs(habit_id);
 create index if not exists habit_logs_user_date_idx on habit_logs(user_id, date);
+create index if not exists bad_days_user_date_idx on bad_days(user_id, date);
 
 -- Row Level Security (RLS) — кожен бачить лише свої дані
 alter table habits enable row level security;

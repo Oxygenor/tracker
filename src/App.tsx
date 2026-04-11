@@ -11,6 +11,9 @@ import HabitsPage from '@/pages/HabitsPage'
 import StatsPage from '@/pages/StatsPage'
 import SettingsPage from '@/pages/SettingsPage'
 import AchievementsPage from '@/pages/AchievementsPage'
+import ChallengePage from '@/pages/ChallengePage'
+import ShopPage from '@/pages/ShopPage'
+import FocusPage from '@/pages/FocusPage'
 
 export default function App() {
   return (
@@ -34,6 +37,9 @@ export default function App() {
             <Route path="/habits" element={<HabitsPage />} />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/achievements" element={<AchievementsPage />} />
+            <Route path="/challenges" element={<ChallengePage />} />
+            <Route path="/shop" element={<ShopPage />} />
+            <Route path="/focus" element={<FocusPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
 

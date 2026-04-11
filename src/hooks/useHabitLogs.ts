@@ -56,6 +56,7 @@ export function useHabitLogs(date?: string) {
         date: today,
         value,
         note: existing?.note,
+        mood: existing?.mood,
       })
       setLogs((prev) => [...prev.filter((l) => l.habit_id !== habitId), log])
     }
@@ -71,9 +72,25 @@ export function useHabitLogs(date?: string) {
       date: today,
       value: existing.value,
       note: note || undefined,
+      mood: existing.mood,
     })
     setLogs((prev) => [...prev.filter((l) => l.habit_id !== habitId), log])
   }
 
-  return { logs, loading, getLog, toggle, setValue, setNote }
+  async function setMood(habitId: string, mood: number) {
+    if (!user) return
+    const existing = getLog(habitId)
+    if (!existing) return
+    const log = await upsertLog({
+      habit_id: habitId,
+      user_id: user.id,
+      date: today,
+      value: existing.value,
+      note: existing.note,
+      mood,
+    })
+    setLogs((prev) => [...prev.filter((l) => l.habit_id !== habitId), log])
+  }
+
+  return { logs, loading, getLog, toggle, setValue, setNote, setMood }
 }

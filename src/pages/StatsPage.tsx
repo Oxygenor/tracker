@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Flame, Trophy, TrendingUp, Calendar, Star } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import { Flame, Trophy, TrendingUp, Calendar, Star, Brain, Clock, Zap } from 'lucide-react'
 import {
   AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip,
@@ -8,6 +8,10 @@ import {
 import { useStatsData } from '@/hooks/useStatsData'
 import YearHeatmap from '@/components/YearHeatmap'
 import { cn } from '@/lib/utils'
+import { format, addDays } from 'date-fns'
+import { uk } from 'date-fns/locale'
+
+const WEEKDAY_NAMES = ['Нд', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
 
 function CustomTooltip({ active, payload, label }: {
   active?: boolean
@@ -50,6 +54,93 @@ export default function StatsPage() {
   const bestAllTimeStreak = habitStats.reduce((m, h) => Math.max(m, h.allTimeStreak), 0)
   const bestHabit = habitStats.find((h) => h.streak === bestCurrentStreak && bestCurrentStreak > 0)
   const totalCompletions = habitStats.reduce((s, h) => s + h.totalDone, 0)
+
+  // Аналітика: найкращий день тижня
+  const bestWeekday = useMemo(() => {
+    if (habitStats.length === 0) return null
+    const weekdayCounts = Array(7).fill(0)
+    const weekdayTotals = Array(7).fill(0)
+    habitStats.forEach((h) => {
+      h.allLogs.forEach((l) => {
+        const dow = new Date(l.date).getDay()
+        weekdayTotals[dow]++
+        if (l.value > 0) weekdayCounts[dow]++
+      })
+    })
+    const weekdayRates = weekdayCounts.map((c, i) => ({
+      day: i,
+      name: WEEKDAY_NAMES[i],
+      rate: weekdayTotals[i] > 0 ? Math.round((c / weekdayTotals[i]) * 100) : 0,
+      count: c,
+    }))
+    const best = weekdayRates.reduce((a, b) => b.rate > a.rate ? b : a, weekdayRates[0])
+    const worst = weekdayRates.reduce((a, b) => b.rate < a.rate ? b : a, weekdayRates[0])
+    return { best, worst, weekdayRates }
+  }, [habitStats])
+
+  // Аналітика: кореляції між звичками
+  const correlations = useMemo(() => {
+    if (habitStats.length < 2) return []
+    const pairs: { a: string; b: string; aName: string; bName: string; aIcon: string; bIcon: string; corr: number }[] = []
+    for (let i = 0; i < habitStats.length; i++) {
+      for (let j = i + 1; j < habitStats.length; j++) {
+        const ha = habitStats[i]
+        const hb = habitStats[j]
+        // Знаходимо спільні дати
+        const datesA = new Set(ha.allLogs.filter((l) => l.value > 0).map((l) => l.date))
+        const datesB = new Set(hb.allLogs.filter((l) => l.value > 0).map((l) => l.date))
+        const allDates = Array.from(new Set([...ha.allLogs.map((l) => l.date), ...hb.allLogs.map((l) => l.date)]))
+        if (allDates.length < 7) continue
+        // Pearson correlation
+        const va: number[] = allDates.map((d) => (datesA.has(d) ? 1 : 0))
+        const vb: number[] = allDates.map((d) => (datesB.has(d) ? 1 : 0))
+        const n = allDates.length
+        const meanA = va.reduce((s: number, v: number) => s + v, 0) / n
+        const meanB = vb.reduce((s: number, v: number) => s + v, 0) / n
+        const num = va.reduce((s: number, v: number, idx: number) => s + (v - meanA) * (vb[idx] - meanB), 0)
+        const denA = Math.sqrt(va.reduce((s: number, v: number) => s + (v - meanA) ** 2, 0))
+        const denB = Math.sqrt(vb.reduce((s: number, v: number) => s + (v - meanB) ** 2, 0))
+        const corr = denA && denB ? num / (denA * denB) : 0
+        if (Math.abs(corr) >= 0.4) {
+          pairs.push({ a: ha.id, b: hb.id, aName: ha.name, bName: hb.name, aIcon: ha.icon, bIcon: hb.icon, corr: Math.round(corr * 100) / 100 })
+        }
+      }
+    }
+    return pairs.sort((a, b) => Math.abs(b.corr) - Math.abs(a.corr)).slice(0, 3)
+  }, [habitStats])
+
+  // Аналітика: прогноз стріку
+  const streakForecast = useMemo(() => {
+    return habitStats
+      .filter((h) => h.streak > 0)
+      .map((h) => {
+        const milestones = [7, 14, 30, 50, 100]
+        const next = milestones.find((m) => m > h.streak)
+        if (!next) return null
+        const daysLeft = next - h.streak
+        const targetDate = format(addDays(new Date(), daysLeft), 'd MMMM', { locale: uk })
+        return { id: h.id, name: h.name, icon: h.icon, color: h.color, streak: h.streak, next, daysLeft, targetDate }
+      })
+      .filter(Boolean)
+      .slice(0, 3)
+  }, [habitStats])
+
+  // Аналітика: скільки днів/часу "повернуто" для streak_free звичок
+  const timeSaved = useMemo(() => {
+    return habitStats
+      .filter((h) => {
+        const totalDone = h.allLogs.filter((l) => l.value > 0).length
+        return totalDone > 0 && h.allTimeStreak > 0
+      })
+      .map((h) => ({
+        id: h.id,
+        name: h.name,
+        icon: h.icon,
+        days: h.allLogs.filter((l) => l.value > 0).length,
+      }))
+      .sort((a, b) => b.days - a.days)
+      .slice(0, 3)
+  }, [habitStats])
 
   return (
     <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-6">
@@ -130,6 +221,138 @@ export default function StatsPage() {
             </div>
           )}
 
+          {/* ── INSIGHTS ── */}
+          {habitStats.length >= 1 && (
+            <div className="space-y-4">
+              <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <Brain className="w-4 h-4 text-violet-500" />
+                Інсайти
+              </h2>
+
+              {/* Найкращий день тижня */}
+              {bestWeekday && (
+                <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-5 shadow-sm">
+                  <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">Твій найкращий день тижня</h3>
+                  <div className="flex gap-2">
+                    {bestWeekday.weekdayRates.map((wd) => (
+                      <div key={wd.day} className="flex-1 flex flex-col items-center gap-1">
+                        <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden" style={{ height: 60 }}>
+                          <div
+                            className="w-full rounded-lg transition-all"
+                            style={{
+                              height: `${wd.rate}%`,
+                              backgroundColor: wd.day === bestWeekday.best.day ? '#8b5cf6' : wd.day === bestWeekday.worst.day ? '#fca5a5' : '#c4b5fd',
+                              marginTop: `${100 - wd.rate}%`,
+                            }}
+                          />
+                        </div>
+                        <span className={cn('text-xs font-medium', wd.day === bestWeekday.best.day ? 'text-violet-600 dark:text-violet-400' : 'text-gray-400 dark:text-gray-500')}>
+                          {wd.name}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{wd.rate}%</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-4 mt-3">
+                    <p className="text-xs text-violet-600 dark:text-violet-400">🔝 {bestWeekday.best.name} — {bestWeekday.best.rate}% виконань</p>
+                    <p className="text-xs text-red-400">⬇️ {bestWeekday.worst.name} — {bestWeekday.worst.rate}%</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Прогноз стріку */}
+              {streakForecast.length > 0 && (
+                <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-5 shadow-sm">
+                  <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
+                    <Flame className="w-4 h-4 text-orange-400" />
+                    Прогноз стріку
+                  </h3>
+                  <div className="space-y-3">
+                    {streakForecast.map((f) => f && (
+                      <div key={f.id} className="flex items-center gap-3">
+                        <span className="text-xl">{f.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{f.name}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            Зараз {f.streak} дн. → ціль {f.next} дн. за {f.daysLeft} {f.daysLeft === 1 ? 'день' : 'днів'} ({f.targetDate})
+                          </p>
+                        </div>
+                        <div className="flex-shrink-0">
+                          <div className="w-16 h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all"
+                              style={{ width: `${Math.round((f.streak / f.next) * 100)}%`, backgroundColor: f.color }}
+                            />
+                          </div>
+                          <p className="text-xs text-gray-400 dark:text-gray-500 text-right mt-0.5">{Math.round((f.streak / f.next) * 100)}%</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Кореляції між звичками */}
+              {correlations.length > 0 && (
+                <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-5 shadow-sm">
+                  <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-amber-400" />
+                    Звички, що посилюють одна одну
+                  </h3>
+                  <div className="space-y-3">
+                    {correlations.map((c, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <span className="text-base">{c.aIcon}</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">+</span>
+                        <span className="text-base">{c.bIcon}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-gray-700 dark:text-gray-300 truncate">
+                            {c.aName} ↔ {c.bName}
+                          </p>
+                        </div>
+                        <span className={cn(
+                          'text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0',
+                          c.corr > 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                        )}>
+                          {c.corr > 0 ? '+' : ''}{Math.round(c.corr * 100)}%
+                        </span>
+                      </div>
+                    ))}
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                      Ці звички частіше виконуються разом того ж дня
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Дні виконань (скільки повернуто) */}
+              {timeSaved.length > 0 && (
+                <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-5 shadow-sm">
+                  <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-green-500" />
+                    Твій вклад у себе
+                  </h3>
+                  <div className="space-y-2">
+                    {timeSaved.map((t) => (
+                      <div key={t.id} className="flex items-center gap-3">
+                        <span className="text-xl">{t.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{t.name}</p>
+                        </div>
+                        <span className="text-sm font-bold text-green-600 dark:text-green-400 flex-shrink-0">
+                          {t.days} {t.days === 1 ? 'день' : t.days < 5 ? 'дні' : 'днів'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                    Стільки разів ти вклав час у свій розвиток
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Area chart */}
           {days.length > 0 && (
             <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-5 shadow-sm">
@@ -191,14 +414,12 @@ export default function StatsPage() {
                       <span className="text-xs text-gray-500 dark:text-gray-400 w-10 text-right">{h.completionRate}%</span>
                     </div>
 
-                    {/* Year heatmap (expandable) */}
                     {expandedHabit === h.id && (
                       <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                         <YearHeatmap logs={h.allLogs} color={h.color} />
                       </div>
                     )}
 
-                    {/* Mini heatmap (period) */}
                     {expandedHabit !== h.id && (
                       <div className="flex gap-1 flex-wrap">
                         {h.data.map((d, i) => (

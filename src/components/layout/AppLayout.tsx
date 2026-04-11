@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { LayoutDashboard, ListChecks, BarChart2, Settings, Flame, Trophy } from 'lucide-react'
+import { LayoutDashboard, ListChecks, BarChart2, Settings, Flame, Trophy, Sword, ShoppingBag, Timer } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
@@ -7,18 +7,43 @@ const navItems = [
   { to: '/habits', icon: ListChecks, label: 'Звички' },
   { to: '/stats', icon: BarChart2, label: 'Статистика' },
   { to: '/achievements', icon: Trophy, label: 'Досягнення' },
+  { to: '/challenges', icon: Sword, label: 'Виклики' },
+  { to: '/focus', icon: Timer, label: 'Фокус' },
+  { to: '/shop', icon: ShoppingBag, label: 'Магазин' },
   { to: '/settings', icon: Settings, label: 'Налаштування' },
+]
+
+// Для мобільної навігації — лише перші 5 (найважливіші)
+const mobileNavItems = [
+  { to: '/', icon: LayoutDashboard, label: 'Сьогодні' },
+  { to: '/habits', icon: ListChecks, label: 'Звички' },
+  { to: '/challenges', icon: Sword, label: 'Виклики' },
+  { to: '/focus', icon: Timer, label: 'Фокус' },
+  { to: '/stats', icon: BarChart2, label: 'Статистика' },
 ]
 
 export default function AppLayout() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
       {/* Top header — mobile */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center gap-3 md:hidden">
-        <div className="w-8 h-8 bg-violet-600 rounded-xl flex items-center justify-center">
-          <Flame className="w-4 h-4 text-white" />
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between md:hidden">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-violet-600 rounded-xl flex items-center justify-center">
+            <Flame className="w-4 h-4 text-white" />
+          </div>
+          <span className="font-bold text-gray-900 dark:text-gray-100">HabitFlow</span>
         </div>
-        <span className="font-bold text-gray-900 dark:text-gray-100">HabitFlow</span>
+        <div className="flex items-center gap-2">
+          <NavLink to="/shop" className={({ isActive }) => cn('p-2 rounded-xl transition-colors', isActive ? 'text-violet-600' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300')}>
+            <ShoppingBag className="w-4 h-4" />
+          </NavLink>
+          <NavLink to="/achievements" className={({ isActive }) => cn('p-2 rounded-xl transition-colors', isActive ? 'text-violet-600' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300')}>
+            <Trophy className="w-4 h-4" />
+          </NavLink>
+          <NavLink to="/settings" className={({ isActive }) => cn('p-2 rounded-xl transition-colors', isActive ? 'text-violet-600' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300')}>
+            <Settings className="w-4 h-4" />
+          </NavLink>
+        </div>
       </header>
 
       <div className="flex flex-1">
@@ -59,9 +84,9 @@ export default function AppLayout() {
         </main>
       </div>
 
-      {/* Bottom nav — mobile */}
+      {/* Bottom nav — mobile (5 основних) */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex">
-        {navItems.map(({ to, icon: Icon, label }) => (
+        {mobileNavItems.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
             to={to}

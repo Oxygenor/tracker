@@ -19,6 +19,7 @@ export async function fetchHabits(userId: string): Promise<Habit[]> {
     .select('*')
     .eq('user_id', userId)
     .eq('is_active', true)
+    .order('sort_order', { ascending: true })
     .order('created_at', { ascending: true })
 
   if (error) throw error
@@ -190,4 +191,36 @@ export async function calculateStreak(
   }
 
   return streak
+}
+
+// ── Bad Days ────────────────────────────────────────────────
+
+export async function fetchBadDays(userId: string, from: string, to: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('bad_days')
+    .select('date')
+    .eq('user_id', userId)
+    .gte('date', from)
+    .lte('date', to)
+
+  if (error) throw error
+  return (data ?? []).map((r) => r.date as string)
+}
+
+export async function markBadDay(userId: string, date: string): Promise<void> {
+  const { error } = await supabase
+    .from('bad_days')
+    .upsert({ user_id: userId, date }, { onConflict: 'user_id,date' })
+
+  if (error) throw error
+}
+
+export async function removeBadDay(userId: string, date: string): Promise<void> {
+  const { error } = await supabase
+    .from('bad_days')
+    .delete()
+    .eq('user_id', userId)
+    .eq('date', date)
+
+  if (error) throw error
 }

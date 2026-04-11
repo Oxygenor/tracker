@@ -1,5 +1,7 @@
 import { useMemo } from 'react'
+import { getMonth } from 'date-fns'
 import type { HabitStat } from './useStatsData'
+import type { Habit } from '@/types'
 
 export interface Achievement {
   id: string
@@ -8,6 +10,7 @@ export interface Achievement {
   emoji: string
   earned: boolean
   progress?: number // 0-100
+  seasonal?: boolean
 }
 
 export interface GamificationData {
@@ -19,7 +22,23 @@ export interface GamificationData {
   xpProgress: number // 0-100
   achievements: Achievement[]
   totalCompletions: number
+  comboBonus: number // 0 | 50 | 100 (percent extra XP)
+  season: Season
 }
+
+export interface Season {
+  name: string
+  emoji: string
+  color: string
+  months: number[]
+}
+
+const SEASONS: Season[] = [
+  { name: 'Зима', emoji: '❄️', color: '#60a5fa', months: [11, 0, 1] },
+  { name: 'Весна', emoji: '🌸', color: '#34d399', months: [2, 3, 4] },
+  { name: 'Літо', emoji: '☀️', color: '#fbbf24', months: [5, 6, 7] },
+  { name: 'Осінь', emoji: '🍂', color: '#f97316', months: [8, 9, 10] },
+]
 
 const LEVEL_TITLES = [
   'Новачок',
@@ -35,7 +54,6 @@ const LEVEL_TITLES = [
 ]
 
 function getLevel(xp: number): number {
-  // Level thresholds: 0, 100, 250, 500, 1000, 2000, 3500, 5000, 7500, 10000
   const thresholds = [0, 100, 250, 500, 1000, 2000, 3500, 5000, 7500, 10000]
   let level = 0
   for (let i = thresholds.length - 1; i >= 0; i--) {
@@ -49,10 +67,40 @@ function getLevelXP(level: number): number {
   return thresholds[Math.min(level, thresholds.length - 1)]
 }
 
-export function useGamification(habitStats: HabitStat[]): GamificationData {
+export function getCurrentSeason(): Season {
+  const month = getMonth(new Date())
+  return SEASONS.find((s) => s.months.includes(month)) ?? SEASONS[0]
+}
+
+export function useGamification(habitStats: HabitStat[], habits?: Habit[]): GamificationData {
   return useMemo(() => {
+    const today = new Date().toISOString().split('T')[0]
+    const currentMonth = getMonth(new Date())
+    const season = SEASONS.find((s) => s.months.includes(currentMonth)) ?? SEASONS[0]
+
+    // Базові виконання (10 XP кожне)
     const totalCompletions = habitStats.reduce((s, h) => s + h.allLogs.filter((l) => l.value > 0).length, 0)
-    const xp = totalCompletions * 10
+
+    // Бонуси за ставки (stakes_xp)
+    const stakesBonus = habitStats.reduce((sum, h) => {
+      const habit = habits?.find((hb) => hb.id === h.id)
+      const stakes = habit?.stakes_xp ?? 0
+      if (stakes === 0) return sum
+      const todayLog = h.allLogs.find((l) => l.date === today)
+      if (todayLog && todayLog.value > 0) return sum + stakes
+      return sum - stakes // штраф за пропуск
+    }, 0)
+
+    const xp = Math.max(0, totalCompletions * 10 + stakesBonus)
+
+    // Комбо бонус (скільки виконано поспіль сьогодні)
+    const todayCompletions = habitStats.filter((h) => {
+      const log = h.allLogs.find((l) => l.date === today)
+      return log && log.value > 0
+    }).length
+    const comboBonus = todayCompletions === habitStats.length && habitStats.length > 0
+      ? 100
+      : todayCompletions >= 3 ? 50 : 0
 
     const level = getLevel(xp)
     const levelTitle = LEVEL_TITLES[level]
@@ -72,6 +120,21 @@ export function useGamification(habitStats: HabitStat[]): GamificationData {
           return last7.filter((l) => l.value > 0).length === 7
         })
       : false
+
+    // Сезонні досягнення: щоб розблокувати — потрібно набрати 50+ виконань за сезон
+    const seasonStart = (() => {
+      const y = new Date().getFullYear()
+      const monthStarts: Record<string, string> = {
+        '❄️': `${y}-12-01`,
+        '🌸': `${y}-03-01`,
+        '☀️': `${y}-06-01`,
+        '🍂': `${y}-09-01`,
+      }
+      return monthStarts[season.emoji] ?? `${y}-01-01`
+    })()
+    const seasonCompletions = habitStats.reduce((s, h) => {
+      return s + h.allLogs.filter((l) => l.value > 0 && l.date >= seasonStart).length
+    }, 0)
 
     const achievements: Achievement[] = [
       {
@@ -167,6 +230,24 @@ export function useGamification(habitStats: HabitStat[]): GamificationData {
         emoji: '🎖️',
         earned: level >= 5,
       },
+      // Сезонні
+      {
+        id: `season_${season.emoji}`,
+        title: `Дух ${season.name === 'Зима' ? 'зими' : season.name === 'Весна' ? 'весни' : season.name === 'Літо' ? 'літа' : 'осені'}`,
+        description: `50+ виконань цього ${season.name === 'Зима' ? 'взимку' : season.name === 'Весна' ? 'навесні' : season.name === 'Літо' ? 'влітку' : 'восени'}`,
+        emoji: season.emoji,
+        earned: seasonCompletions >= 50,
+        progress: Math.min(100, Math.round((seasonCompletions / 50) * 100)),
+        seasonal: true,
+      },
+      {
+        id: 'combo_master',
+        title: 'Майстер комбо',
+        description: 'Виконай всі звички одного дня',
+        emoji: '⚡',
+        earned: comboBonus === 100,
+        seasonal: false,
+      },
     ]
 
     return {
@@ -178,6 +259,8 @@ export function useGamification(habitStats: HabitStat[]): GamificationData {
       xpProgress,
       achievements,
       totalCompletions,
+      comboBonus,
+      season,
     }
-  }, [habitStats])
+  }, [habitStats, habits])
 }

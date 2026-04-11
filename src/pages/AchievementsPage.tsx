@@ -1,10 +1,13 @@
 import { useStatsData } from '@/hooks/useStatsData'
 import { useGamification } from '@/hooks/useGamification'
+import { useHabits } from '@/hooks/useHabits'
 import { cn } from '@/lib/utils'
+import { Zap } from 'lucide-react'
 
 export default function AchievementsPage() {
   const { habitStats, loading } = useStatsData(30)
-  const { xp, level, levelTitle, xpForNextLevel, xpForCurrentLevel, xpProgress, achievements, totalCompletions } = useGamification(habitStats)
+  const { habits } = useHabits()
+  const { xp, level, levelTitle, xpForNextLevel, xpForCurrentLevel, xpProgress, achievements, totalCompletions, comboBonus, season } = useGamification(habitStats, habits)
 
   const earned = achievements.filter((a) => a.earned).length
 
@@ -25,11 +28,18 @@ export default function AchievementsPage() {
                 <p className="text-violet-200 text-sm">Поточний рівень</p>
                 <p className="text-3xl font-bold mt-0.5">Рівень {level + 1}</p>
                 <p className="text-violet-200 text-sm font-medium">{levelTitle}</p>
+                <p className="text-violet-300 text-xs mt-1">{season.emoji} Сезон: {season.name}</p>
               </div>
               <div className="text-right">
                 <p className="text-violet-200 text-sm">Загальний XP</p>
                 <p className="text-3xl font-bold">{xp.toLocaleString()}</p>
                 <p className="text-violet-200 text-xs">{totalCompletions} виконань</p>
+                {comboBonus > 0 && (
+                  <div className="flex items-center gap-1 justify-end mt-1">
+                    <Zap className="w-3 h-3 text-yellow-300" />
+                    <p className="text-yellow-200 text-xs font-medium">+{comboBonus}% комбо!</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -70,56 +80,82 @@ export default function AchievementsPage() {
             </div>
           </div>
 
-          {/* Achievements grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {achievements
-              .sort((a, b) => (b.earned ? 1 : 0) - (a.earned ? 1 : 0))
-              .map((achievement) => (
-                <div
-                  key={achievement.id}
-                  className={cn(
-                    'bg-white dark:bg-gray-800 border rounded-2xl p-4 shadow-sm transition-all',
-                    achievement.earned
-                      ? 'border-violet-200 dark:border-violet-700'
-                      : 'border-gray-100 dark:border-gray-700 opacity-60'
-                  )}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={cn(
-                      'text-3xl w-12 h-12 flex items-center justify-center rounded-xl flex-shrink-0',
-                      achievement.earned
-                        ? 'bg-violet-50 dark:bg-violet-900/30'
-                        : 'bg-gray-50 dark:bg-gray-700 grayscale'
-                    )}>
-                      {achievement.emoji}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{achievement.title}</p>
-                        {achievement.earned && (
-                          <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded-full">✓</span>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{achievement.description}</p>
+          {/* Сезонні досягнення */}
+          <div>
+            <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+              {season.emoji} Сезонні
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {achievements
+                .filter((a) => a.seasonal)
+                .sort((a, b) => (b.earned ? 1 : 0) - (a.earned ? 1 : 0))
+                .map((achievement) => (
+                  <AchievementCard key={achievement.id} achievement={achievement} />
+                ))}
+            </div>
+          </div>
 
-                      {!achievement.earned && achievement.progress !== undefined && (
-                        <div className="mt-2">
-                          <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-violet-400 rounded-full transition-all"
-                              style={{ width: `${achievement.progress}%` }}
-                            />
-                          </div>
-                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{achievement.progress}%</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
+          {/* Основні досягнення */}
+          <div>
+            <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+              Всі досягнення
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {achievements
+                .filter((a) => !a.seasonal)
+                .sort((a, b) => (b.earned ? 1 : 0) - (a.earned ? 1 : 0))
+                .map((achievement) => (
+                  <AchievementCard key={achievement.id} achievement={achievement} />
+                ))}
+            </div>
           </div>
         </>
       )}
+    </div>
+  )
+}
+
+function AchievementCard({ achievement }: { achievement: ReturnType<typeof useGamification>['achievements'][0] }) {
+  return (
+    <div
+      className={cn(
+        'bg-white dark:bg-gray-800 border rounded-2xl p-4 shadow-sm transition-all',
+        achievement.earned
+          ? 'border-violet-200 dark:border-violet-700'
+          : 'border-gray-100 dark:border-gray-700 opacity-60'
+      )}
+    >
+      <div className="flex items-start gap-3">
+        <div className={cn(
+          'text-3xl w-12 h-12 flex items-center justify-center rounded-xl flex-shrink-0',
+          achievement.earned
+            ? 'bg-violet-50 dark:bg-violet-900/30'
+            : 'bg-gray-50 dark:bg-gray-700 grayscale'
+        )}>
+          {achievement.emoji}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{achievement.title}</p>
+            {achievement.earned && (
+              <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded-full">✓</span>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{achievement.description}</p>
+
+          {!achievement.earned && achievement.progress !== undefined && (
+            <div className="mt-2">
+              <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-violet-400 rounded-full transition-all"
+                  style={{ width: `${achievement.progress}%` }}
+                />
+              </div>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{achievement.progress}%</p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

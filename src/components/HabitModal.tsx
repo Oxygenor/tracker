@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { Habit, HabitType, HabitCategory } from '@/types'
+import type { Habit, HabitType, HabitCategory, HabitFrequency } from '@/types'
 
-const ICONS = ['⭐', '🌅', '🚶', '🏃', '💪', '🧘', '📚', '💧', '🥗', '😴', '🚭', '🍬', '🍺', '🎯', '✍️', '🎵', '🧹', '💊', '🛁', '🌿']
+const ICONS = ['⭐', '🌅', '🚶', '🏃', '💪', '🧘', '📚', '💧', '🥗', '😴', '🚭', '🍬', '🍺', '🎯', '✍️', '🎵', '🧹', '💊', '🛁', '🌿', '🧠', '🏊', '🚴', '🎨', '🍎', '☕', '🌙', '💤', '🔥', '❤️']
 const COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1']
 
 const HABIT_TYPES: { value: HabitType; label: string; desc: string }[] = [
@@ -20,6 +20,16 @@ const CATEGORIES: { value: HabitCategory; label: string; emoji: string }[] = [
   { value: 'mindfulness', label: 'Медитація', emoji: '🧘' },
   { value: 'nutrition', label: 'Харчування', emoji: '🥗' },
   { value: 'productivity', label: 'Продуктивність', emoji: '🎯' },
+]
+
+const WEEKDAYS = [
+  { short: 'Пн', value: 1 },
+  { short: 'Вт', value: 2 },
+  { short: 'Ср', value: 3 },
+  { short: 'Чт', value: 4 },
+  { short: 'Пт', value: 5 },
+  { short: 'Сб', value: 6 },
+  { short: 'Нд', value: 0 },
 ]
 
 interface Props {
@@ -40,6 +50,10 @@ export default function HabitModal({ open, onClose, onSave, userId, initial }: P
   const [reminderTime, setReminderTime] = useState('')
   const [category, setCategory] = useState<HabitCategory>('general')
   const [freezeCount, setFreezeCount] = useState(3)
+  const [motivation, setMotivation] = useState('')
+  const [stakesXp, setStakesXp] = useState(0)
+  const [frequency, setFrequency] = useState<HabitFrequency>('daily')
+  const [frequencyDays, setFrequencyDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6])
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -53,6 +67,10 @@ export default function HabitModal({ open, onClose, onSave, userId, initial }: P
       setReminderTime(initial.reminder_time ?? '')
       setCategory(initial.category ?? 'general')
       setFreezeCount(initial.freeze_count ?? 3)
+      setMotivation(initial.motivation ?? '')
+      setStakesXp(initial.stakes_xp ?? 0)
+      setFrequency(initial.frequency ?? 'daily')
+      setFrequencyDays(initial.frequency_days ?? [0, 1, 2, 3, 4, 5, 6])
     } else {
       setName('')
       setType('binary')
@@ -63,10 +81,22 @@ export default function HabitModal({ open, onClose, onSave, userId, initial }: P
       setReminderTime('')
       setCategory('general')
       setFreezeCount(3)
+      setMotivation('')
+      setStakesXp(0)
+      setFrequency('daily')
+      setFrequencyDays([0, 1, 2, 3, 4, 5, 6])
     }
   }, [initial, open])
 
   if (!open) return null
+
+  function toggleWeekday(day: number) {
+    setFrequencyDays((prev) =>
+      prev.includes(day)
+        ? prev.length > 1 ? prev.filter((d) => d !== day) : prev
+        : [...prev, day]
+    )
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -85,6 +115,10 @@ export default function HabitModal({ open, onClose, onSave, userId, initial }: P
         is_active: true,
         category,
         freeze_count: freezeCount,
+        motivation: motivation.trim() || undefined,
+        stakes_xp: stakesXp,
+        frequency,
+        frequency_days: frequency === 'weekly' ? frequencyDays : [0, 1, 2, 3, 4, 5, 6],
       })
       onClose()
     } finally {
@@ -128,6 +162,20 @@ export default function HabitModal({ open, onClose, onSave, userId, initial }: P
                 className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             </div>
+          </div>
+
+          {/* Motivation */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Навіщо це мені? <span className="text-gray-400 font-normal">(необов'язково)</span>
+            </label>
+            <input
+              type="text"
+              value={motivation}
+              onChange={(e) => setMotivation(e.target.value)}
+              placeholder="Моя причина і мотивація..."
+              className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            />
           </div>
 
           {/* Category */}
@@ -250,17 +298,61 @@ export default function HabitModal({ open, onClose, onSave, userId, initial }: P
             </div>
           )}
 
-          {/* Reminder + Streak freeze */}
-          <div className="flex gap-3">
-            <div className="flex-1">
+          {/* Frequency */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Частота</label>
+            <div className="flex gap-2 mb-3">
+              {(['daily', 'weekly'] as const).map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setFrequency(f)}
+                  className={cn(
+                    'flex-1 py-2 rounded-xl text-sm font-medium transition-all',
+                    frequency === f
+                      ? 'bg-violet-600 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  )}
+                >
+                  {f === 'daily' ? 'Щодня' : 'Вибрані дні'}
+                </button>
+              ))}
+            </div>
+            {frequency === 'weekly' && (
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Оберіть дні тижня:</p>
+                <div className="flex gap-2">
+                  {WEEKDAYS.map(({ short, value }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => toggleWeekday(value)}
+                      className={cn(
+                        'flex-1 py-2 rounded-lg text-xs font-medium transition-all',
+                        frequencyDays.includes(value)
+                          ? 'bg-violet-600 text-white'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      )}
+                    >
+                      {short}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Reminder + Streak freeze + Stakes */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Нагадування <span className="text-gray-400 font-normal">(необов'язково)</span>
+                Нагадування
               </label>
               <input
                 type="time"
                 value={reminderTime}
                 onChange={(e) => setReminderTime(e.target.value)}
-                className="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             </div>
             <div>
@@ -270,13 +362,36 @@ export default function HabitModal({ open, onClose, onSave, userId, initial }: P
               <select
                 value={freezeCount}
                 onChange={(e) => setFreezeCount(Number(e.target.value))}
-                className="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               >
                 {[0, 1, 2, 3, 5, 7].map((n) => (
                   <option key={n} value={n}>{n} {n === 0 ? '(вимк.)' : n === 1 ? 'раз' : 'рази'}</option>
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Stakes XP */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              ⚡ Ставка XP <span className="text-gray-400 font-normal">(бонус за виконання, штраф за пропуск)</span>
+            </label>
+            <select
+              value={stakesXp}
+              onChange={(e) => setStakesXp(Number(e.target.value))}
+              className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            >
+              <option value={0}>Без ставки</option>
+              <option value={5}>±5 XP (низька)</option>
+              <option value={10}>±10 XP (середня)</option>
+              <option value={25}>±25 XP (висока)</option>
+              <option value={50}>±50 XP (ризикована)</option>
+            </select>
+            {stakesXp > 0 && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                Виконав → +{stakesXp} бонусних XP. Пропустив → -{stakesXp} XP.
+              </p>
+            )}
           </div>
 
           {/* Actions */}
