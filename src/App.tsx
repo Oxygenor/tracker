@@ -14,6 +14,9 @@ import AchievementsPage from '@/pages/AchievementsPage'
 import ChallengePage from '@/pages/ChallengePage'
 import ShopPage from '@/pages/ShopPage'
 import FocusPage from '@/pages/FocusPage'
+import MementoMoriPage from '@/pages/MementoMoriPage'
+import ForestPage from '@/pages/ForestPage'
+import LettersPage from '@/pages/LettersPage'
 
 export default function App() {
   return (
@@ -40,6 +43,9 @@ export default function App() {
             <Route path="/challenges" element={<ChallengePage />} />
             <Route path="/shop" element={<ShopPage />} />
             <Route path="/focus" element={<FocusPage />} />
+            <Route path="/mori" element={<MementoMoriPage />} />
+            <Route path="/forest" element={<ForestPage />} />
+            <Route path="/letters" element={<LettersPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
 

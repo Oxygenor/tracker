@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { LayoutDashboard, ListChecks, BarChart2, Settings, Flame, Trophy, Sword, ShoppingBag, Timer } from 'lucide-react'
+import { LayoutDashboard, ListChecks, BarChart2, Settings, Flame, Trophy, Sword, ShoppingBag, Timer, Skull, Trees, Mail } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
@@ -9,16 +9,19 @@ const navItems = [
   { to: '/achievements', icon: Trophy, label: 'Досягнення' },
   { to: '/challenges', icon: Sword, label: 'Виклики' },
   { to: '/focus', icon: Timer, label: 'Фокус' },
+  { to: '/forest', icon: Trees, label: 'Ліс' },
+  { to: '/letters', icon: Mail, label: 'Листи' },
+  { to: '/mori', icon: Skull, label: 'Memento Mori' },
   { to: '/shop', icon: ShoppingBag, label: 'Магазин' },
   { to: '/settings', icon: Settings, label: 'Налаштування' },
 ]
 
-// Для мобільної навігації — лише перші 5 (найважливіші)
+// Для мобільної навігації — лише найважливіші
 const mobileNavItems = [
   { to: '/', icon: LayoutDashboard, label: 'Сьогодні' },
   { to: '/habits', icon: ListChecks, label: 'Звички' },
   { to: '/challenges', icon: Sword, label: 'Виклики' },
-  { to: '/focus', icon: Timer, label: 'Фокус' },
+  { to: '/forest', icon: Trees, label: 'Ліс' },
   { to: '/stats', icon: BarChart2, label: 'Статистика' },
 ]
 

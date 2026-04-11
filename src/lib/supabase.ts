@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import type { Habit, HabitLog } from '@/types'
+import type { Habit, HabitLog, FutureLetter } from '@/types'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
@@ -221,6 +221,59 @@ export async function removeBadDay(userId: string, date: string): Promise<void> 
     .delete()
     .eq('user_id', userId)
     .eq('date', date)
+
+  if (error) throw error
+}
+
+// ── Future Letters ──────────────────────────────────────────
+
+export async function fetchLetters(userId: string): Promise<FutureLetter[]> {
+  const { data, error } = await supabase
+    .from('future_letters')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data ?? []
+}
+
+export async function createLetter(
+  letter: Omit<FutureLetter, 'id' | 'created_at' | 'opened_at' | 'is_burned'>
+): Promise<FutureLetter> {
+  const { data, error } = await supabase
+    .from('future_letters')
+    .insert({ ...letter, is_burned: false })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function openLetter(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('future_letters')
+    .update({ opened_at: new Date().toISOString() })
+    .eq('id', id)
+
+  if (error) throw error
+}
+
+export async function burnLetter(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('future_letters')
+    .update({ is_burned: true })
+    .eq('id', id)
+
+  if (error) throw error
+}
+
+export async function deleteLetter(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('future_letters')
+    .delete()
+    .eq('id', id)
 
   if (error) throw error
 }

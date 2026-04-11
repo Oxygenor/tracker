@@ -38,9 +38,27 @@ export function useHabitLogs(date?: string) {
         user_id: user.id,
         date: today,
         value: 1,
+        is_partial: false,
       })
       setLogs((prev) => [...prev.filter((l) => l.habit_id !== habitId), log])
     }
+  }
+
+  async function setPartial(habitId: string) {
+    if (!user) return
+    const existing = getLog(habitId)
+    // Якщо вже повне — не змінюємо
+    if (existing && !existing.is_partial) return
+    const log = await upsertLog({
+      habit_id: habitId,
+      user_id: user.id,
+      date: today,
+      value: 1,
+      is_partial: true,
+      note: existing?.note,
+      mood: existing?.mood,
+    })
+    setLogs((prev) => [...prev.filter((l) => l.habit_id !== habitId), log])
   }
 
   async function setValue(habitId: string, value: number) {
@@ -92,5 +110,5 @@ export function useHabitLogs(date?: string) {
     setLogs((prev) => [...prev.filter((l) => l.habit_id !== habitId), log])
   }
 
-  return { logs, loading, getLog, toggle, setValue, setNote, setMood }
+  return { logs, loading, getLog, toggle, setValue, setNote, setMood, setPartial }
 }

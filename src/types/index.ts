@@ -22,6 +22,9 @@ export interface Habit {
   stakes_xp?: number
   frequency?: HabitFrequency
   frequency_days?: number[] // 0=Нд, 1=Пн, 2=Вт, 3=Ср, 4=Чт, 5=Пт, 6=Сб
+  // v3 fields
+  identity?: string     // "Я роблю це, бо я — бігун"
+  consequence?: string  // "Якщо я не роблю це — ..."
 }
 
 export interface HabitLog {
@@ -32,6 +35,20 @@ export interface HabitLog {
   value: number // 1/0 for binary, count for counter, 1 for streak_free check-in
   note?: string
   mood?: number // 1-5
+  is_partial?: boolean // 2-хвилинне правило
+  created_at: string
+}
+
+export interface FutureLetter {
+  id: string
+  user_id: string
+  title: string
+  content: string
+  habit_id?: string
+  target_pct: number
+  unlock_date: string
+  is_burned: boolean
+  opened_at?: string
   created_at: string
 }
 

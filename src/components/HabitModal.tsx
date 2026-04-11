@@ -54,6 +54,8 @@ export default function HabitModal({ open, onClose, onSave, userId, initial }: P
   const [stakesXp, setStakesXp] = useState(0)
   const [frequency, setFrequency] = useState<HabitFrequency>('daily')
   const [frequencyDays, setFrequencyDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6])
+  const [identity, setIdentity] = useState('')
+  const [consequence, setConsequence] = useState('')
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -71,6 +73,8 @@ export default function HabitModal({ open, onClose, onSave, userId, initial }: P
       setStakesXp(initial.stakes_xp ?? 0)
       setFrequency(initial.frequency ?? 'daily')
       setFrequencyDays(initial.frequency_days ?? [0, 1, 2, 3, 4, 5, 6])
+      setIdentity(initial.identity ?? '')
+      setConsequence(initial.consequence ?? '')
     } else {
       setName('')
       setType('binary')
@@ -85,6 +89,8 @@ export default function HabitModal({ open, onClose, onSave, userId, initial }: P
       setStakesXp(0)
       setFrequency('daily')
       setFrequencyDays([0, 1, 2, 3, 4, 5, 6])
+      setIdentity('')
+      setConsequence('')
     }
   }, [initial, open])
 
@@ -119,6 +125,8 @@ export default function HabitModal({ open, onClose, onSave, userId, initial }: P
         stakes_xp: stakesXp,
         frequency,
         frequency_days: frequency === 'weekly' ? frequencyDays : [0, 1, 2, 3, 4, 5, 6],
+        identity: identity.trim() || undefined,
+        consequence: consequence.trim() || undefined,
       })
       onClose()
     } finally {
@@ -174,6 +182,38 @@ export default function HabitModal({ open, onClose, onSave, userId, initial }: P
               value={motivation}
               onChange={(e) => setMotivation(e.target.value)}
               placeholder="Моя причина і мотивація..."
+              className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            />
+          </div>
+
+          {/* Identity */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              🪪 Ідентичність <span className="text-gray-400 font-normal">(необов'язково)</span>
+            </label>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-400 dark:text-gray-500 flex-shrink-0">Я — це</span>
+              <input
+                type="text"
+                value={identity}
+                onChange={(e) => setIdentity(e.target.value)}
+                placeholder="людина що щодня медитує"
+                className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Показується при виконанні як нагадування хто ти є</p>
+          </div>
+
+          {/* Consequence */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              ⚠️ Якщо я це не роблю... <span className="text-gray-400 font-normal">(необов'язково)</span>
+            </label>
+            <input
+              type="text"
+              value={consequence}
+              onChange={(e) => setConsequence(e.target.value)}
+              placeholder="Через 6 місяців відчую..."
               className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           </div>
