@@ -30,6 +30,11 @@ create table if not exists habit_logs (
   unique(habit_id, date)
 );
 
+-- Міграція: нові колонки (виконати якщо таблиці вже існують)
+alter table habits add column if not exists category text default 'general';
+alter table habits add column if not exists sort_order integer default 0;
+alter table habits add column if not exists freeze_count integer default 3;
+
 -- Індекси для швидкого пошуку
 create index if not exists habits_user_id_idx on habits(user_id);
 create index if not exists habit_logs_habit_id_idx on habit_logs(habit_id);

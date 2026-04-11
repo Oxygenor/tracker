@@ -1,24 +1,26 @@
-import { Bell, BellOff, BellRing, LogOut, User, ChevronRight } from 'lucide-react'
+import { Bell, BellOff, BellRing, LogOut, User, ChevronRight, Sun, Moon } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useNotificationsContext } from '@/context/NotificationsContext'
+import { useTheme } from '@/context/ThemeContext'
 import { cn } from '@/lib/utils'
 
 export default function SettingsPage() {
   const { user, signOut } = useAuth()
   const { permission, requestPermission, sendTestNotification } = useNotificationsContext()
+  const { theme, toggleTheme } = useTheme()
 
   const displayName = user?.user_metadata?.full_name ?? user?.email ?? 'Користувач'
   const avatarLetter = displayName.charAt(0).toUpperCase()
 
   return (
     <div className="p-4 sm:p-6 max-w-lg mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Налаштування</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Налаштування</h1>
 
       {/* Profile */}
-      <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Профіль</h2>
+      <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-5 shadow-sm">
+        <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">Профіль</h2>
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-violet-100 rounded-full flex items-center justify-center">
+          <div className="w-12 h-12 bg-violet-100 dark:bg-violet-900/40 rounded-full flex items-center justify-center">
             {user?.user_metadata?.avatar_url ? (
               <img
                 src={user.user_metadata.avatar_url}
@@ -26,24 +28,55 @@ export default function SettingsPage() {
                 alt="avatar"
               />
             ) : (
-              <span className="text-violet-700 font-bold text-lg">{avatarLetter}</span>
+              <span className="text-violet-700 dark:text-violet-400 font-bold text-lg">{avatarLetter}</span>
             )}
           </div>
           <div>
-            <p className="font-semibold text-gray-900">{displayName}</p>
-            <p className="text-sm text-gray-500">{user?.email}</p>
+            <p className="font-semibold text-gray-900 dark:text-gray-100">{displayName}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{user?.email}</p>
           </div>
-          <User className="w-4 h-4 text-gray-300 ml-auto" />
+          <User className="w-4 h-4 text-gray-300 dark:text-gray-600 ml-auto" />
         </div>
       </div>
 
+      {/* Appearance */}
+      <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-5 shadow-sm">
+        <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">Вигляд</h2>
+        <button
+          onClick={toggleTheme}
+          className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            {theme === 'dark' ? (
+              <Moon className="w-5 h-5 text-violet-500" />
+            ) : (
+              <Sun className="w-5 h-5 text-amber-500" />
+            )}
+            <div className="text-left">
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                {theme === 'dark' ? 'Темна тема' : 'Світла тема'}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Натисни щоб змінити</p>
+            </div>
+          </div>
+          <div className={cn(
+            'w-11 h-6 rounded-full transition-colors relative',
+            theme === 'dark' ? 'bg-violet-600' : 'bg-gray-300'
+          )}>
+            <div className={cn(
+              'absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all',
+              theme === 'dark' ? 'left-6' : 'left-1'
+            )} />
+          </div>
+        </button>
+      </div>
+
       {/* Notifications */}
-      <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Сповіщення</h2>
+      <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-5 shadow-sm">
+        <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">Сповіщення</h2>
 
         <div className="space-y-3">
-          {/* Status */}
-          <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50">
+          <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
             <div className="flex items-center gap-3">
               {permission === 'granted' ? (
                 <Bell className="w-5 h-5 text-green-500" />
@@ -53,7 +86,7 @@ export default function SettingsPage() {
                 <Bell className="w-5 h-5 text-gray-400" />
               )}
               <div>
-                <p className="text-sm font-medium text-gray-900">Статус сповіщень</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Статус сповіщень</p>
                 <p className={cn('text-xs mt-0.5', {
                   'text-green-600': permission === 'granted',
                   'text-red-500': permission === 'denied',
@@ -70,7 +103,6 @@ export default function SettingsPage() {
             )}
           </div>
 
-          {/* Enable button */}
           {permission !== 'granted' && permission !== 'denied' && (
             <button
               onClick={requestPermission}
@@ -84,15 +116,14 @@ export default function SettingsPage() {
             </button>
           )}
 
-          {/* Test button */}
           {permission === 'granted' && (
             <button
               onClick={sendTestNotification}
-              className="w-full flex items-center justify-between px-4 py-3 border border-gray-200 hover:bg-gray-50 rounded-xl transition-colors"
+              className="w-full flex items-center justify-between px-4 py-3 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-colors"
             >
               <div className="flex items-center gap-3">
                 <BellRing className="w-5 h-5 text-violet-500" />
-                <span className="text-sm font-medium text-gray-700">Тестове сповіщення</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Тестове сповіщення</span>
               </div>
               <ChevronRight className="w-4 h-4 text-gray-300" />
             </button>
@@ -100,17 +131,17 @@ export default function SettingsPage() {
         </div>
 
         {permission === 'granted' && (
-          <p className="text-xs text-gray-400 mt-3">
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-3">
             Нагадування надсилаються у час, вказаний для кожної звички. Налаштуй час у розділі "Звички".
           </p>
         )}
       </div>
 
       {/* Sign out */}
-      <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+      <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-5 shadow-sm">
         <button
           onClick={signOut}
-          className="w-full flex items-center gap-3 px-4 py-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl transition-colors"
+          className="w-full flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl transition-colors"
         >
           <LogOut className="w-5 h-5" />
           <span className="text-sm font-medium">Вийти з акаунту</span>

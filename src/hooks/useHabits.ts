@@ -45,5 +45,5 @@ export function useHabits() {
     setHabits((prev) => prev.filter((h) => h.id !== id))
   }
 
-  return { habits, loading, error, reload: load, addHabit, editHabit, removeHabit }
+  return { habits, loading, error, reload: load, addHabit, editHabit, removeHabit, setHabits }
 }

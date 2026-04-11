@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from '@/context/AuthContext'
+import { ThemeProvider } from '@/context/ThemeContext'
 import { NotificationsProvider } from '@/context/NotificationsContext'
 import ProtectedRoute from '@/components/layout/ProtectedRoute'
 import AppLayout from '@/components/layout/AppLayout'
@@ -9,9 +10,11 @@ import DashboardPage from '@/pages/DashboardPage'
 import HabitsPage from '@/pages/HabitsPage'
 import StatsPage from '@/pages/StatsPage'
 import SettingsPage from '@/pages/SettingsPage'
+import AchievementsPage from '@/pages/AchievementsPage'
 
 export default function App() {
   return (
+    <ThemeProvider>
     <AuthProvider>
       <BrowserRouter>
         <Routes>
@@ -30,6 +33,7 @@ export default function App() {
             <Route path="/" element={<DashboardPage />} />
             <Route path="/habits" element={<HabitsPage />} />
             <Route path="/stats" element={<StatsPage />} />
+            <Route path="/achievements" element={<AchievementsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
 
@@ -37,5 +41,6 @@ export default function App() {
         </Routes>
       </BrowserRouter>
     </AuthProvider>
+    </ThemeProvider>
   )
 }

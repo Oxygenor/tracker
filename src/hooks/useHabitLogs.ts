@@ -49,15 +49,31 @@ export function useHabitLogs(date?: string) {
       await deleteLog(habitId, today)
       setLogs((prev) => prev.filter((l) => l.habit_id !== habitId))
     } else {
+      const existing = getLog(habitId)
       const log = await upsertLog({
         habit_id: habitId,
         user_id: user.id,
         date: today,
         value,
+        note: existing?.note,
       })
       setLogs((prev) => [...prev.filter((l) => l.habit_id !== habitId), log])
     }
   }
 
-  return { logs, loading, getLog, toggle, setValue }
+  async function setNote(habitId: string, note: string) {
+    if (!user) return
+    const existing = getLog(habitId)
+    if (!existing) return
+    const log = await upsertLog({
+      habit_id: habitId,
+      user_id: user.id,
+      date: today,
+      value: existing.value,
+      note: note || undefined,
+    })
+    setLogs((prev) => [...prev.filter((l) => l.habit_id !== habitId), log])
+  }
+
+  return { logs, loading, getLog, toggle, setValue, setNote }
 }

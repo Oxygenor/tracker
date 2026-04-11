@@ -1,4 +1,5 @@
 export type HabitType = 'binary' | 'counter' | 'streak_free'
+export type HabitCategory = 'general' | 'health' | 'sport' | 'learning' | 'mindfulness' | 'nutrition' | 'productivity'
 
 export interface Habit {
   id: string
@@ -12,6 +13,9 @@ export interface Habit {
   reminder_time?: string
   is_active: boolean
   created_at: string
+  category?: HabitCategory
+  sort_order?: number
+  freeze_count?: number
 }
 
 export interface HabitLog {

@@ -117,6 +117,48 @@ export async function deleteLog(habitId: string, date: string): Promise<void> {
 
 // ── Streak calculation ──────────────────────────────────────
 
+export async function fetchAllLogsForHabit(habitId: string, userId: string): Promise<{ date: string; value: number }[]> {
+  const { data, error } = await supabase
+    .from('habit_logs')
+    .select('date, value')
+    .eq('habit_id', habitId)
+    .eq('user_id', userId)
+    .order('date', { ascending: true })
+
+  if (error) throw error
+  return data ?? []
+}
+
+export async function calculateAllTimeStreak(habitId: string, userId: string): Promise<number> {
+  const { data, error } = await supabase
+    .from('habit_logs')
+    .select('date, value')
+    .eq('habit_id', habitId)
+    .eq('user_id', userId)
+    .gt('value', 0)
+    .order('date', { ascending: false })
+
+  if (error) throw error
+  if (!data || data.length === 0) return 0
+
+  const dates = data.map((l) => l.date).sort().reverse()
+  let maxStreak = 1
+  let currentStreak = 1
+
+  for (let i = 1; i < dates.length; i++) {
+    const prev = new Date(dates[i - 1])
+    const curr = new Date(dates[i])
+    const diff = Math.round((prev.getTime() - curr.getTime()) / (1000 * 60 * 60 * 24))
+    if (diff === 1) {
+      currentStreak++
+      maxStreak = Math.max(maxStreak, currentStreak)
+    } else {
+      currentStreak = 1
+    }
+  }
+  return maxStreak
+}
+
 export async function calculateStreak(
   habitId: string,
   userId: string,

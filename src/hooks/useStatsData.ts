@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { fetchLogsForRange, calculateStreak } from '@/lib/supabase'
+import { fetchLogsForRange, calculateStreak, calculateAllTimeStreak, fetchAllLogsForHabit } from '@/lib/supabase'
 import { useHabits } from '@/hooks/useHabits'
 import { format, subDays, eachDayOfInterval, parseISO } from 'date-fns'
 import { uk } from 'date-fns/locale'
@@ -20,9 +20,11 @@ export interface HabitStat {
   icon: string
   color: string
   streak: number
+  allTimeStreak: number
   completionRate: number // 0-100
   totalDone: number
   data: { date: string; label: string; value: number }[]
+  allLogs: { date: string; value: number }[]
 }
 
 export function useStatsData(period: 7 | 30) {
@@ -62,7 +64,11 @@ export function useStatsData(period: 7 | 30) {
     // Per-habit stats
     const stats: HabitStat[] = await Promise.all(
       habits.map(async (h) => {
-        const streak = await calculateStreak(h.id, user.id, to)
+        const [streak, allTimeStreak, allLogs] = await Promise.all([
+          calculateStreak(h.id, user.id, to),
+          calculateAllTimeStreak(h.id, user.id),
+          fetchAllLogsForHabit(h.id, user.id),
+        ])
         const data = interval.map((d) => {
           const dateStr = format(d, 'yyyy-MM-dd')
           const label = format(d, period === 7 ? 'EEE' : 'd', { locale: uk })
@@ -76,8 +82,10 @@ export function useStatsData(period: 7 | 30) {
           icon: h.icon,
           color: h.color,
           streak,
+          allTimeStreak,
           completionRate: Math.round((totalDone / period) * 100),
           totalDone,
+          allLogs,
           data,
         }
       })
