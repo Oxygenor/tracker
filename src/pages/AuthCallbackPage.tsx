@@ -1,20 +1,17 @@
 import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 
 export default function AuthCallbackPage() {
-  const navigate = useNavigate()
-
   useEffect(() => {
     const code = new URLSearchParams(window.location.search).get('code')
 
     if (code) {
       supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
         if (error) console.error('Auth callback error:', error)
-        navigate('/', { replace: true })
+        window.location.replace('/')
       })
     } else {
-      navigate('/', { replace: true })
+      window.location.replace('/')
     }
   }, [navigate])
 
