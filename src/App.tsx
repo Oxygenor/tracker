@@ -4,6 +4,7 @@ import { NotificationsProvider } from '@/context/NotificationsContext'
 import ProtectedRoute from '@/components/layout/ProtectedRoute'
 import AppLayout from '@/components/layout/AppLayout'
 import LoginPage from '@/pages/LoginPage'
+import AuthCallbackPage from '@/pages/AuthCallbackPage'
 import DashboardPage from '@/pages/DashboardPage'
 import HabitsPage from '@/pages/HabitsPage'
 import StatsPage from '@/pages/StatsPage'
@@ -15,6 +16,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
           <Route
             element={
