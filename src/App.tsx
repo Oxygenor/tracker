@@ -1,0 +1,39 @@
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider } from '@/context/AuthContext'
+import { NotificationsProvider } from '@/context/NotificationsContext'
+import ProtectedRoute from '@/components/layout/ProtectedRoute'
+import AppLayout from '@/components/layout/AppLayout'
+import LoginPage from '@/pages/LoginPage'
+import DashboardPage from '@/pages/DashboardPage'
+import HabitsPage from '@/pages/HabitsPage'
+import StatsPage from '@/pages/StatsPage'
+import SettingsPage from '@/pages/SettingsPage'
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+
+          <Route
+            element={
+              <ProtectedRoute>
+                <NotificationsProvider>
+                  <AppLayout />
+                </NotificationsProvider>
+              </ProtectedRoute>
+            }
+          >
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/habits" element={<HabitsPage />} />
+            <Route path="/stats" element={<StatsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Route>
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
+  )
+}

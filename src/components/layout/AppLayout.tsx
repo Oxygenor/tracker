@@ -1,0 +1,82 @@
+import { NavLink, Outlet } from 'react-router-dom'
+import { LayoutDashboard, ListChecks, BarChart2, Settings, Flame } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+const navItems = [
+  { to: '/', icon: LayoutDashboard, label: 'Сьогодні' },
+  { to: '/habits', icon: ListChecks, label: 'Звички' },
+  { to: '/stats', icon: BarChart2, label: 'Статистика' },
+  { to: '/settings', icon: Settings, label: 'Налаштування' },
+]
+
+export default function AppLayout() {
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Top header — mobile */}
+      <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 md:hidden">
+        <div className="w-8 h-8 bg-violet-600 rounded-xl flex items-center justify-center">
+          <Flame className="w-4 h-4 text-white" />
+        </div>
+        <span className="font-bold text-gray-900">HabitFlow</span>
+      </header>
+
+      <div className="flex flex-1">
+        {/* Sidebar — desktop */}
+        <aside className="hidden md:flex flex-col w-60 bg-white border-r border-gray-200 p-4">
+          <div className="flex items-center gap-3 mb-8 px-2">
+            <div className="w-9 h-9 bg-violet-600 rounded-xl flex items-center justify-center">
+              <Flame className="w-5 h-5 text-white" />
+            </div>
+            <span className="font-bold text-lg text-gray-900">HabitFlow</span>
+          </div>
+
+          <nav className="flex flex-col gap-1">
+            {navItems.map(({ to, icon: Icon, label }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={to === '/'}
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
+                    isActive
+                      ? 'bg-violet-50 text-violet-700'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  )
+                }
+              >
+                <Icon className="w-5 h-5" />
+                {label}
+              </NavLink>
+            ))}
+          </nav>
+        </aside>
+
+        {/* Main content */}
+        <main className="flex-1 overflow-auto pb-20 md:pb-0">
+          <Outlet />
+        </main>
+      </div>
+
+      {/* Bottom nav — mobile */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex">
+        {navItems.map(({ to, icon: Icon, label }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={to === '/'}
+            className={({ isActive }) =>
+              cn(
+                'flex-1 flex flex-col items-center py-2 gap-0.5 text-xs font-medium transition-colors',
+                isActive ? 'text-violet-700' : 'text-gray-400 hover:text-gray-600'
+              )
+            }
+          >
+            <Icon className="w-5 h-5" />
+            {label}
+          </NavLink>
+        ))}
+      </nav>
+    </div>
+  )
+}
