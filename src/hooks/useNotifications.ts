@@ -14,25 +14,32 @@ async function registerSW(): Promise<ServiceWorkerRegistration | null> {
   }
 }
 
-// Show notification via Notification API (with SW fallback for PWA)
+// Show notification — uses SW on mobile (required), fallback to Notification API on desktop
 async function showNotification(title: string, body: string, tag: string) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return
 
-  // Try SW with a short timeout — don't block on it
-  try {
-    const reg = await Promise.race([
-      navigator.serviceWorker?.getRegistration(),
-      new Promise<undefined>((resolve) => setTimeout(() => resolve(undefined), 500)),
-    ])
-    if (reg?.active) {
-      reg.active.postMessage({ type: 'SHOW_NOTIFICATION', title, body, tag })
-      return
-    }
-  } catch {
-    // fall through
+  const options: NotificationOptions = {
+    body,
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    tag,
+    data: { url: '/' },
   }
 
-  new Notification(title, { body, tag })
+  if ('serviceWorker' in navigator) {
+    try {
+      const reg = await Promise.race<ServiceWorkerRegistration>([
+        navigator.serviceWorker.ready,
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('sw-timeout')), 3000)),
+      ])
+      await reg.showNotification(title, options)
+      return
+    } catch {
+      // SW not available — fall through to Notification API
+    }
+  }
+
+  new Notification(title, options)
 }
 
 export function useNotifications(habits: Habit[]) {
@@ -96,29 +103,11 @@ export function useNotifications(habits: Habit[]) {
 
   // Test notification
   async function sendTestNotification() {
-    console.log('[HabitFlow] sendTestNotification called')
-    console.log('[HabitFlow] Notification in window:', 'Notification' in window)
-    console.log('[HabitFlow] permission:', Notification.permission)
-
-    if (!('Notification' in window)) {
-      alert('Цей браузер не підтримує сповіщення')
-      return
-    }
-    if (Notification.permission !== 'granted') {
-      alert(`Дозвіл: ${Notification.permission}. Спочатку увімкни сповіщення.`)
-      return
-    }
-
-    try {
-      new Notification('🔔 HabitFlow — тест', {
-        body: 'Нагадування працюють! Так виглядатимуть твої сповіщення.',
-        tag: 'test',
-      })
-      console.log('[HabitFlow] Notification created')
-    } catch (e) {
-      console.error('[HabitFlow] Notification error:', e)
-      alert(`Помилка: ${e}`)
-    }
+    await showNotification(
+      '🔔 HabitFlow — тест',
+      'Нагадування працюють! Так виглядатимуть твої сповіщення.',
+      'test'
+    )
   }
 
   return { permission, requestPermission, sendTestNotification }
