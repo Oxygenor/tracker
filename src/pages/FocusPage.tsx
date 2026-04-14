@@ -33,13 +33,14 @@ function playDoneSound(mode: 'work' | 'break' | 'long_break') {
   }
 }
 
-type TimerMode = 'work' | 'break' | 'long_break'
+type TimerMode = 'work' | 'break' | 'long_break' | 'test'
 type TimerState = 'idle' | 'running' | 'paused' | 'done'
 
-const MODE_CONFIG: Record<TimerMode, { label: string; minutes: number; color: string; emoji: string }> = {
+const MODE_CONFIG: Record<TimerMode, { label: string; minutes: number; seconds?: number; color: string; emoji: string }> = {
   work: { label: 'Фокус', minutes: 25, color: '#8b5cf6', emoji: '🧠' },
   break: { label: 'Пауза', minutes: 5, color: '#10b981', emoji: '☕' },
   long_break: { label: 'Довга пауза', minutes: 15, color: '#3b82f6', emoji: '🌿' },
+  test: { label: 'Тест 5с', minutes: 0, seconds: 5, color: '#f59e0b', emoji: '🧪' },
 }
 
 function formatTime(seconds: number): string {
@@ -55,7 +56,8 @@ export default function FocusPage() {
 
   const [mode, setMode] = useState<TimerMode>('work')
   const [state, setState] = useState<TimerState>('idle')
-  const [secondsLeft, setSecondsLeft] = useState(MODE_CONFIG.work.minutes * 60)
+  const getModeSeconds = (m: TimerMode) => MODE_CONFIG[m].seconds ?? MODE_CONFIG[m].minutes * 60
+  const [secondsLeft, setSecondsLeft] = useState(getModeSeconds('work'))
   const [selectedHabitId, setSelectedHabitId] = useState<string | null>(null)
   const [completedPomodoros, setCompletedPomodoros] = useState(0)
   const [totalFocusMinutes, setTotalFocusMinutes] = useState(0)
@@ -64,7 +66,7 @@ export default function FocusPage() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const startSecondsRef = useRef(MODE_CONFIG.work.minutes * 60)
 
-  const totalSeconds = MODE_CONFIG[mode].minutes * 60
+  const totalSeconds = getModeSeconds(mode)
   const pct = ((totalSeconds - secondsLeft) / totalSeconds) * 100
   const config = MODE_CONFIG[mode]
 
@@ -78,7 +80,7 @@ export default function FocusPage() {
   function switchMode(newMode: TimerMode) {
     stopTimer()
     setMode(newMode)
-    const secs = MODE_CONFIG[newMode].minutes * 60
+    const secs = getModeSeconds(newMode)
     setSecondsLeft(secs)
     startSecondsRef.current = secs
     setState('idle')
@@ -106,6 +108,9 @@ export default function FocusPage() {
             setTotalFocusMinutes((m) => m + MODE_CONFIG.work.minutes)
             playDoneSound('work')
             showNotification('🎉 Фокус-сесія завершена!', 'Чудова робота! Час відпочити 5 хвилин.', 'focus-done')
+          } else if (mode === 'test') {
+            playDoneSound('work')
+            showNotification('🧪 Тест пройшов!', 'Сповіщення працюють коректно.', 'focus-test')
           } else {
             playDoneSound(mode)
             showNotification('✅ Пауза закінчилась!', 'Готовий до нового фокусу? Вперед!', 'focus-break-done')
@@ -124,7 +129,7 @@ export default function FocusPage() {
 
   function resetTimer() {
     stopTimer()
-    const secs = MODE_CONFIG[mode].minutes * 60
+    const secs = getModeSeconds(mode)
     setSecondsLeft(secs)
     setState('idle')
     setJustCompleted(false)
