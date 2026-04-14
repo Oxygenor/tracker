@@ -15,7 +15,7 @@ async function registerSW(): Promise<ServiceWorkerRegistration | null> {
 }
 
 // Show notification — uses SW on mobile (required), fallback to Notification API on desktop
-async function showNotification(title: string, body: string, tag: string) {
+export async function showNotification(title: string, body: string, tag: string) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return
 
   const options: NotificationOptions = {

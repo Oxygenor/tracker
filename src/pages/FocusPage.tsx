@@ -2,9 +2,36 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { Play, Pause, RotateCcw, Coffee, Brain, Check } from 'lucide-react'
 import { useHabits } from '@/hooks/useHabits'
 import { useHabitLogs } from '@/hooks/useHabitLogs'
+import { showNotification } from '@/hooks/useNotifications'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import type { Habit } from '@/types'
+
+function playDoneSound(mode: 'work' | 'break' | 'long_break') {
+  try {
+    const ctx = new AudioContext()
+    const tones = mode === 'work'
+      ? [523, 659, 784] // До-Мі-Соль (мажор — успіх)
+      : [784, 659, 523] // Соль-Мі-До (спадний — пауза)
+
+    tones.forEach((freq, i) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.type = 'sine'
+      osc.frequency.value = freq
+      const start = ctx.currentTime + i * 0.18
+      gain.gain.setValueAtTime(0, start)
+      gain.gain.linearRampToValueAtTime(0.3, start + 0.05)
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.4)
+      osc.start(start)
+      osc.stop(start + 0.4)
+    })
+  } catch {
+    // Web Audio API недоступний
+  }
+}
 
 type TimerMode = 'work' | 'break' | 'long_break'
 type TimerState = 'idle' | 'running' | 'paused' | 'done'
@@ -77,6 +104,11 @@ export default function FocusPage() {
           if (mode === 'work') {
             setCompletedPomodoros((p) => p + 1)
             setTotalFocusMinutes((m) => m + MODE_CONFIG.work.minutes)
+            playDoneSound('work')
+            showNotification('🎉 Фокус-сесія завершена!', 'Чудова робота! Час відпочити 5 хвилин.', 'focus-done')
+          } else {
+            playDoneSound(mode)
+            showNotification('✅ Пауза закінчилась!', 'Готовий до нового фокусу? Вперед!', 'focus-break-done')
           }
           return 0
         }
