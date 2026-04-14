@@ -16,10 +16,12 @@ async function registerSW(): Promise<ServiceWorkerRegistration | null> {
 
 // Show notification via SW or Notification API
 async function showNotification(title: string, body: string, tag: string) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return
+
   const reg = await navigator.serviceWorker?.ready?.catch(() => null)
-  if (reg) {
-    reg.active?.postMessage({ type: 'SHOW_NOTIFICATION', title, body, tag })
-  } else if ('Notification' in window && Notification.permission === 'granted') {
+  if (reg?.active) {
+    reg.active.postMessage({ type: 'SHOW_NOTIFICATION', title, body, tag })
+  } else {
     new Notification(title, { body, tag })
   }
 }
