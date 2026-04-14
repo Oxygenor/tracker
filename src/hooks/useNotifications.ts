@@ -14,16 +14,25 @@ async function registerSW(): Promise<ServiceWorkerRegistration | null> {
   }
 }
 
-// Show notification via SW or Notification API
+// Show notification via Notification API (with SW fallback for PWA)
 async function showNotification(title: string, body: string, tag: string) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return
 
-  const reg = await navigator.serviceWorker?.ready?.catch(() => null)
-  if (reg?.active) {
-    reg.active.postMessage({ type: 'SHOW_NOTIFICATION', title, body, tag })
-  } else {
-    new Notification(title, { body, tag })
+  // Try SW with a short timeout — don't block on it
+  try {
+    const reg = await Promise.race([
+      navigator.serviceWorker?.getRegistration(),
+      new Promise<undefined>((resolve) => setTimeout(() => resolve(undefined), 500)),
+    ])
+    if (reg?.active) {
+      reg.active.postMessage({ type: 'SHOW_NOTIFICATION', title, body, tag })
+      return
+    }
+  } catch {
+    // fall through
   }
+
+  new Notification(title, { body, tag })
 }
 
 export function useNotifications(habits: Habit[]) {
