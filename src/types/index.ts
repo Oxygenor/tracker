@@ -56,3 +56,16 @@ export interface HabitWithStreak extends Habit {
   current_streak: number
   today_log?: HabitLog
 }
+
+export type TaskDifficulty = 'easy' | 'medium' | 'hard'
+
+export interface Task {
+  id: string
+  user_id: string
+  title: string
+  difficulty: TaskDifficulty
+  date: string // YYYY-MM-DD
+  completed: boolean
+  xp_reward: number
+  created_at: string
+}

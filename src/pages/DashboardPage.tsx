@@ -3,15 +3,16 @@ import { format, subDays, getDay } from 'date-fns'
 import { uk } from 'date-fns/locale'
 import {
   Check, Plus, Flame, Trophy, MessageSquare, X,
-  CloudRain, Zap, Heart, AlertTriangle, Clock, Shuffle, Timer
+  CloudRain, Zap, Heart, AlertTriangle, Clock, Shuffle, Timer, Trash2, ChevronDown
 } from 'lucide-react'
 import { useHabits } from '@/hooks/useHabits'
 import { useHabitLogs } from '@/hooks/useHabitLogs'
 import { useAuth } from '@/context/AuthContext'
+import { useTasks, TASK_XP, TASK_LABELS } from '@/hooks/useTasks'
 import { calculateStreak, markBadDay, removeBadDay, fetchBadDays, fetchLogsForDate } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 import { useNavigate } from 'react-router-dom'
-import type { Habit, HabitLog } from '@/types'
+import type { Habit, HabitLog, TaskDifficulty } from '@/types'
 
 // ── Mood ────────────────────────────────────────────────────
 const MOOD_OPTIONS = [
@@ -163,6 +164,7 @@ export default function DashboardPage() {
 
   const { habits, loading: habitsLoading } = useHabits()
   const { logs, getLog, toggle, setValue, setNote, setMood, setPartial, loading: logsLoading } = useHabitLogs(today)
+  const { tasks, addTask, completeTask, removeTask } = useTasks()
   const [streaks, setStreaks] = useState<Record<string, number>>({})
   const [yesterdayLogs, setYesterdayLogs] = useState<HabitLog[]>([])
   const [noteModal, setNoteModal] = useState<{ habitId: string; habitName: string } | null>(null)
@@ -171,6 +173,11 @@ export default function DashboardPage() {
   const [isBadDay, setIsBadDay] = useState(false)
   const [badDayLoading, setBadDayLoading] = useState(false)
   const [lastCompleted, setLastCompleted] = useState<string | null>(null)
+
+  // Tasks
+  const [showTaskForm, setShowTaskForm] = useState(false)
+  const [taskTitle, setTaskTitle] = useState('')
+  const [taskDifficulty, setTaskDifficulty] = useState<TaskDifficulty>('medium')
 
   // Рулетка
   const [rouletteItem, setRouletteItem] = useState<typeof ROULETTE_POOL[0] | null>(null)
@@ -268,6 +275,15 @@ export default function DashboardPage() {
       if (isBadDay) { await removeBadDay(user.id, today); setIsBadDay(false) }
       else { await markBadDay(user.id, today); setIsBadDay(true) }
     } finally { setBadDayLoading(false) }
+  }
+
+  async function handleAddTask(e: React.FormEvent) {
+    e.preventDefault()
+    const trimmed = taskTitle.trim()
+    if (!trimmed) return
+    await addTask(trimmed, taskDifficulty)
+    setTaskTitle('')
+    setShowTaskForm(false)
   }
 
   function handleRouletteComplete() {
@@ -574,6 +590,114 @@ export default function DashboardPage() {
           )}
         </>
       )}
+
+      {/* Tasks section */}
+      <div className="mt-8">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Завдання на сьогодні</h2>
+          <button
+            onClick={() => setShowTaskForm((v) => !v)}
+            className={cn('flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors',
+              showTaskForm
+                ? 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                : 'bg-violet-600 hover:bg-violet-700 text-white'
+            )}>
+            {showTaskForm ? <><ChevronDown className="w-3.5 h-3.5" />Закрити</> : <><Plus className="w-3.5 h-3.5" />Додати</>}
+          </button>
+        </div>
+
+        {showTaskForm && (
+          <form onSubmit={handleAddTask} className="mb-3 p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-sm space-y-3">
+            <input
+              type="text"
+              value={taskTitle}
+              onChange={(e) => setTaskTitle(e.target.value)}
+              placeholder="Що треба зробити сьогодні?"
+              autoFocus
+              className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            />
+            <div className="flex gap-2">
+              {(['easy', 'medium', 'hard'] as TaskDifficulty[]).map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setTaskDifficulty(d)}
+                  className={cn('flex-1 py-1.5 rounded-xl text-xs font-medium border transition-colors',
+                    taskDifficulty === d
+                      ? d === 'easy' ? 'bg-green-500 border-green-500 text-white'
+                        : d === 'medium' ? 'bg-amber-500 border-amber-500 text-white'
+                          : 'bg-red-500 border-red-500 text-white'
+                      : 'border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-gray-300'
+                  )}>
+                  {TASK_LABELS[d]} · +{TASK_XP[d]} XP
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setShowTaskForm(false)}
+                className="flex-1 py-2 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                Скасувати
+              </button>
+              <button type="submit" disabled={!taskTitle.trim()}
+                className="flex-1 py-2 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 text-white rounded-xl text-sm font-medium transition-colors">
+                Додати
+              </button>
+            </div>
+          </form>
+        )}
+
+        {tasks.length === 0 && !showTaskForm ? (
+          <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">Немає завдань на сьогодні</p>
+        ) : (
+          <div className="space-y-2">
+            {tasks.map((task) => {
+              const diffColor = task.difficulty === 'easy'
+                ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20'
+                : task.difficulty === 'medium'
+                  ? 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20'
+                  : 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20'
+
+              return (
+                <div key={task.id}
+                  className={cn('flex items-center gap-3 p-3 rounded-2xl border transition-all bg-white dark:bg-gray-800',
+                    task.completed
+                      ? 'border-green-200 dark:border-green-800 bg-green-50/30 dark:bg-green-900/10'
+                      : 'border-gray-100 dark:border-gray-700'
+                  )}>
+                  <button
+                    onClick={() => completeTask(task.id, !task.completed)}
+                    className={cn('w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all',
+                      task.completed
+                        ? 'bg-green-500 text-white'
+                        : 'border-2 border-gray-200 dark:border-gray-600 hover:border-violet-400 text-transparent hover:text-violet-300'
+                    )}>
+                    <Check className="w-4 h-4" />
+                  </button>
+
+                  <div className="flex-1 min-w-0">
+                    <p className={cn('text-sm font-medium', task.completed ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100')}>
+                      {task.title}
+                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className={cn('text-xs px-1.5 py-0.5 rounded-full font-medium', diffColor)}>
+                        {TASK_LABELS[task.difficulty]}
+                      </span>
+                      <span className="text-xs text-violet-500 dark:text-violet-400 font-medium">
+                        +{task.xp_reward} XP
+                      </span>
+                    </div>
+                  </div>
+
+                  <button onClick={() => removeTask(task.id)}
+                    className="p-1.5 text-gray-300 dark:text-gray-600 hover:text-red-400 dark:hover:text-red-400 rounded-lg transition-colors flex-shrink-0">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
 
       {noteModal && (
         <NoteModal habitName={noteModal.habitName} currentNote={getLog(noteModal.habitId)?.note ?? ''}

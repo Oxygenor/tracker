@@ -36,7 +36,16 @@ export default function AppLayout() {
           </div>
           <span className="font-bold text-gray-900 dark:text-gray-100">HabitFlow</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          <NavLink to="/focus" className={({ isActive }) => cn('p-2 rounded-xl transition-colors', isActive ? 'text-violet-600' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300')}>
+            <Timer className="w-4 h-4" />
+          </NavLink>
+          <NavLink to="/letters" className={({ isActive }) => cn('p-2 rounded-xl transition-colors', isActive ? 'text-violet-600' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300')}>
+            <Mail className="w-4 h-4" />
+          </NavLink>
+          <NavLink to="/mori" className={({ isActive }) => cn('p-2 rounded-xl transition-colors', isActive ? 'text-violet-600' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300')}>
+            <Skull className="w-4 h-4" />
+          </NavLink>
           <NavLink to="/shop" className={({ isActive }) => cn('p-2 rounded-xl transition-colors', isActive ? 'text-violet-600' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300')}>
             <ShoppingBag className="w-4 h-4" />
           </NavLink>

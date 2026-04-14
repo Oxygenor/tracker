@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import type { Habit, HabitLog, FutureLetter } from '@/types'
+import type { Habit, HabitLog, FutureLetter, Task } from '@/types'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
@@ -276,4 +276,60 @@ export async function deleteLetter(id: string): Promise<void> {
     .eq('id', id)
 
   if (error) throw error
+}
+
+// ── Tasks ────────────────────────────────────────────────────
+
+export async function fetchTasks(userId: string, date: string): Promise<Task[]> {
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('date', date)
+    .order('created_at', { ascending: true })
+
+  if (error) throw error
+  return data ?? []
+}
+
+export async function createTask(
+  task: Omit<Task, 'id' | 'created_at'>
+): Promise<Task> {
+  const { data, error } = await supabase
+    .from('tasks')
+    .insert(task)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function toggleTask(id: string, completed: boolean): Promise<void> {
+  const { error } = await supabase
+    .from('tasks')
+    .update({ completed })
+    .eq('id', id)
+
+  if (error) throw error
+}
+
+export async function deleteTask(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('tasks')
+    .delete()
+    .eq('id', id)
+
+  if (error) throw error
+}
+
+export async function fetchCompletedTasksXP(userId: string): Promise<number> {
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('xp_reward')
+    .eq('user_id', userId)
+    .eq('completed', true)
+
+  if (error) throw error
+  return (data ?? []).reduce((sum, t) => sum + (t.xp_reward as number), 0)
 }

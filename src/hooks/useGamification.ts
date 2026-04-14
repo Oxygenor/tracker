@@ -72,7 +72,7 @@ export function getCurrentSeason(): Season {
   return SEASONS.find((s) => s.months.includes(month)) ?? SEASONS[0]
 }
 
-export function useGamification(habitStats: HabitStat[], habits?: Habit[]): GamificationData {
+export function useGamification(habitStats: HabitStat[], habits?: Habit[], bonusXP = 0): GamificationData {
   return useMemo(() => {
     const today = new Date().toISOString().split('T')[0]
     const currentMonth = getMonth(new Date())
@@ -91,7 +91,7 @@ export function useGamification(habitStats: HabitStat[], habits?: Habit[]): Gami
       return sum - stakes // штраф за пропуск
     }, 0)
 
-    const xp = Math.max(0, totalCompletions * 10 + stakesBonus)
+    const xp = Math.max(0, totalCompletions * 10 + stakesBonus + bonusXP)
 
     // Комбо бонус (скільки виконано поспіль сьогодні)
     const todayCompletions = habitStats.filter((h) => {
@@ -262,5 +262,5 @@ export function useGamification(habitStats: HabitStat[], habits?: Habit[]): Gami
       comboBonus,
       season,
     }
-  }, [habitStats, habits])
+  }, [habitStats, habits, bonusXP])
 }

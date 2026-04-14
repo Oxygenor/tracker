@@ -1,13 +1,15 @@
 import { useStatsData } from '@/hooks/useStatsData'
 import { useGamification } from '@/hooks/useGamification'
 import { useHabits } from '@/hooks/useHabits'
+import { useTasks } from '@/hooks/useTasks'
 import { cn } from '@/lib/utils'
 import { Zap } from 'lucide-react'
 
 export default function AchievementsPage() {
   const { habitStats, loading } = useStatsData(30)
   const { habits } = useHabits()
-  const { xp, level, levelTitle, xpForNextLevel, xpForCurrentLevel, xpProgress, achievements, totalCompletions, comboBonus, season } = useGamification(habitStats, habits)
+  const { allTimeXP } = useTasks()
+  const { xp, level, levelTitle, xpForNextLevel, xpForCurrentLevel, xpProgress, achievements, totalCompletions, comboBonus, season } = useGamification(habitStats, habits, allTimeXP)
 
   const earned = achievements.filter((a) => a.earned).length
 
