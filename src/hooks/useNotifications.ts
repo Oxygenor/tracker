@@ -96,11 +96,29 @@ export function useNotifications(habits: Habit[]) {
 
   // Test notification
   async function sendTestNotification() {
-    await showNotification(
-      '🔔 HabitFlow — тест',
-      'Нагадування працюють! Так виглядатимуть твої сповіщення.',
-      'test'
-    )
+    console.log('[HabitFlow] sendTestNotification called')
+    console.log('[HabitFlow] Notification in window:', 'Notification' in window)
+    console.log('[HabitFlow] permission:', Notification.permission)
+
+    if (!('Notification' in window)) {
+      alert('Цей браузер не підтримує сповіщення')
+      return
+    }
+    if (Notification.permission !== 'granted') {
+      alert(`Дозвіл: ${Notification.permission}. Спочатку увімкни сповіщення.`)
+      return
+    }
+
+    try {
+      new Notification('🔔 HabitFlow — тест', {
+        body: 'Нагадування працюють! Так виглядатимуть твої сповіщення.',
+        tag: 'test',
+      })
+      console.log('[HabitFlow] Notification created')
+    } catch (e) {
+      console.error('[HabitFlow] Notification error:', e)
+      alert(`Помилка: ${e}`)
+    }
   }
 
   return { permission, requestPermission, sendTestNotification }
