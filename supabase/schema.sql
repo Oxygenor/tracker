@@ -43,6 +43,7 @@ alter table habits add column if not exists frequency_days integer[] default '{0
 
 -- Настрій після виконання
 alter table habit_logs add column if not exists mood integer; -- 1-5
+alter table habit_logs add column if not exists is_partial boolean default false; -- 2-хвилинне правило
 
 -- Таблиця поганих днів
 create table if not exists bad_days (

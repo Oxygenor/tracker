@@ -38,7 +38,6 @@ export function useHabitLogs(date?: string) {
         user_id: user.id,
         date: today,
         value: 1,
-        is_partial: false,
       })
       setLogs((prev) => [...prev.filter((l) => l.habit_id !== habitId), log])
     }
