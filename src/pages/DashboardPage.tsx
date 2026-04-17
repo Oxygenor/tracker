@@ -240,6 +240,7 @@ export default function DashboardPage() {
   // Правило двох: знаходимо звички де вчора і позавчора пропущено
   const atRiskHabits = useMemo(() => {
     return todayHabits.filter((h) => {
+      if (h.created_at >= yesterday) return false
       const yLog = yesterdayLogs.find((l) => l.habit_id === h.id)
       const todayLog = getLog(h.id)
       const missedYesterday = !yLog || yLog.value === 0
@@ -561,8 +562,8 @@ export default function DashboardPage() {
                         <CounterInput habit={habit} value={log?.value ?? 0} onChange={(v) => setValue(habit.id, v)} />
                       ) : (
                         <div className="flex items-center gap-1">
-                          {/* 2-хвилинне правило */}
-                          {!done && (
+                          {/* 2-хвилинне правило — тільки для не-бінарних */}
+                          {!done && habit.type !== 'binary' && (
                             <button onClick={() => handlePartial(habit.id)}
                               title="2-хвилинне правило — зроби хоч трохи"
                               className="w-7 h-7 rounded-lg border border-dashed border-amber-300 dark:border-amber-600 text-amber-500 flex items-center justify-center text-xs hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors">
